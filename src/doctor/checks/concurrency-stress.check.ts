@@ -4,6 +4,7 @@ import { DiagnosticContext } from '../../types/domain.js';
 import { now, calculateStats } from '../../utils/index.js';
 import { gradeConcurrency, gradeErrorRate, worstGrade } from '../../grading/index.js';
 import { recordCheck } from '../../observability/metrics.js';
+import { CONCURRENCY_LEVELS, DEFAULT_TIMEOUT_MS } from '../../constants.js';
 
 export class ConcurrencyStressCheck {
   name = 'concurrency-stress';
@@ -42,7 +43,7 @@ export class ConcurrencyStressCheck {
         };
       }
 
-      const concurrencyLevels = [5, 10, 25, 50];
+      const concurrencyLevels = CONCURRENCY_LEVELS;
       const results: Array<{
         level: number;
         successRate: number;
@@ -58,7 +59,7 @@ export class ConcurrencyStressCheck {
 
         for (let i = 0; i < level; i++) {
           const start = performance.now();
-          const promise = client.callTool(testableTool.name, {}).then(
+          const callPromise = client.callTool(testableTool.name, {}).then(
             () => {
               successes++;
               latencies.push(performance.now() - start);
@@ -68,7 +69,17 @@ export class ConcurrencyStressCheck {
               latencies.push(performance.now() - start);
             },
           );
-          promises.push(promise);
+
+          const timeoutPromise = new Promise<void>((_, reject) =>
+            setTimeout(() => reject(new Error('concurrent call timed out')), DEFAULT_TIMEOUT_MS),
+          );
+
+          promises.push(
+            Promise.race([callPromise, timeoutPromise]).catch(() => {
+              errors++;
+              latencies.push(performance.now() - start);
+            }),
+          );
         }
 
         await Promise.allSettled(promises);

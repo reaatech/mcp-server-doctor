@@ -5,6 +5,8 @@ import { now } from '../../utils/index.js';
 import { gradeCompliance } from '../../grading/index.js';
 import { recordCheck } from '../../observability/metrics.js';
 
+const VALID_SCHEMA_TYPES = ['string', 'number', 'integer', 'boolean', 'array', 'object', 'null'];
+
 export class ToolSchemaValidationCheck {
   name = 'tool-schema-validation';
   category = CheckCategory.SCHEMA;
@@ -29,7 +31,7 @@ export class ToolSchemaValidationCheck {
       for (const tool of tools) {
         const issues: string[] = [];
 
-        if (!tool.name || !/^[a-zA-Z][a-zA-Z0-9_\-.]*$/.test(tool.name)) {
+        if (!tool.name || !/^[a-zA-Z][a-zA-Z0-9_\-.]+$/.test(tool.name)) {
           issues.push('Invalid tool name format');
         }
 
@@ -41,24 +43,9 @@ export class ToolSchemaValidationCheck {
           issues.push('Missing input schema');
         } else {
           const schema = tool.inputSchema as Record<string, unknown>;
-          if (schema.type && schema.type !== 'object') {
-            issues.push(`Unexpected schema type: ${schema.type}`);
-          }
-          // Schema without properties or $ref is valid (e.g., { type: 'object' } means any object)
-          // Only flag if it has an unexpected type
-          if (schema.type && schema.type !== 'object' && !schema.$ref) {
-            // Allow primitive types as valid schemas
-            const validTypes = [
-              'string',
-              'number',
-              'integer',
-              'boolean',
-              'array',
-              'object',
-              'null',
-            ];
-            if (!validTypes.includes(schema.type as string)) {
-              issues.push(`Unexpected schema type: ${schema.type}`);
+          if (schema.type && typeof schema.type === 'string') {
+            if (!VALID_SCHEMA_TYPES.includes(schema.type)) {
+              issues.push(`Unexpected schema type: ${String(schema.type)}`);
             }
           }
         }

@@ -5,9 +5,7 @@ import { now, measureTimeAsync, calculateStats } from '../../utils/index.js';
 import { gradeLatency } from '../../grading/index.js';
 import { logger } from '../../observability/logger.js';
 import { recordCheck, recordLatency } from '../../observability/metrics.js';
-
-const WARMUP_ROUNDS = 3;
-const MEASUREMENT_ROUNDS = 20;
+import { WARMUP_ROUNDS, MEASUREMENT_ROUNDS, MAX_TOOLS_TO_PROFILE } from '../../constants.js';
 
 export class LatencyProfilingCheck {
   name = 'latency-profiling';
@@ -36,22 +34,39 @@ export class LatencyProfilingCheck {
         details.overallLatency = { p50: 0, p90: 0, p99: 0, min: 0, max: 0, mean: 0, samples: 0 };
         details.rawLatencies = [];
       } else {
-        for (const tool of testableTools.slice(0, 3)) {
+        for (const tool of testableTools.slice(0, MAX_TOOLS_TO_PROFILE)) {
           const samples: number[] = [];
+          const failedRounds: number[] = [];
 
           for (let i = 0; i < WARMUP_ROUNDS + MEASUREMENT_ROUNDS; i++) {
-            const { durationMs } = await measureTimeAsync(() => client.callTool(tool.name, {}));
-            samples.push(durationMs);
-
-            if (context.options.verbose) {
-              logger.debug({ tool: tool.name, round: i, latency: durationMs }, 'Latency sample');
+            try {
+              const { durationMs } = await measureTimeAsync(() => client.callTool(tool.name, {}));
+              samples.push(durationMs);
+              if (context.options.verbose) {
+                logger.debug({ tool: tool.name, round: i, latency: durationMs }, 'Latency sample');
+              }
+            } catch (error) {
+              const errMsg = error instanceof Error ? error.message : String(error);
+              logger.warn({ tool: tool.name, round: i, error: errMsg }, 'Latency sample failed');
+              failedRounds.push(i);
             }
           }
 
           const measurementSamples = samples.slice(WARMUP_ROUNDS);
-          const stats = calculateStats(measurementSamples);
-          toolLatencies.push({ toolName: tool.name, latency: stats, samples: measurementSamples });
+          const stats =
+            measurementSamples.length > 0
+              ? calculateStats(measurementSamples)
+              : { p50: 0, p90: 0, p99: 0, min: 0, max: 0, mean: 0, samples: 0 };
+          toolLatencies.push({
+            toolName: tool.name,
+            latency: stats,
+            samples: measurementSamples,
+          });
           allLatencies.push(...measurementSamples);
+
+          if (failedRounds.length > 0) {
+            details[`${tool.name}_failedRounds`] = failedRounds;
+          }
 
           recordLatency(tool.name, stats.p99);
         }
