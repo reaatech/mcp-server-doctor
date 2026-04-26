@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/mcp-server-doctor.svg)](https://www.npmjs.com/package/mcp-server-doctor)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org/)
 
 > **Lighthouse for MCP servers** — A comprehensive CLI diagnostic and profiling tool for Model Context Protocol (MCP) endpoints.
 
@@ -45,7 +45,7 @@
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 18 or higher
+- [Node.js](https://nodejs.org/) 22 or higher
 - An MCP server endpoint to diagnose
 
 ### Installation
