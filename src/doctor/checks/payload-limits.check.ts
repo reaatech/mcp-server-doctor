@@ -4,9 +4,7 @@ import { DiagnosticContext } from '../../types/domain.js';
 import { now } from '../../utils/index.js';
 import { gradePayload } from '../../grading/index.js';
 import { recordCheck } from '../../observability/metrics.js';
-
-const MAX_PAYLOAD_SIZE = 5 * 1024 * 1024;
-const MIN_PAYLOAD_SIZE = 1024;
+import { MIN_PAYLOAD_BYTES, MAX_PAYLOAD_BYTES } from '../../constants.js';
 
 export class PayloadLimitsCheck {
   name = 'payload-limits';
@@ -22,7 +20,6 @@ export class PayloadLimitsCheck {
       const testableTool = tools.find((t) => {
         const schema = t.inputSchema as Record<string, unknown>;
         const props = (schema.properties as Record<string, unknown>) || {};
-        // Prefer tools with a string property that can accept large payloads
         const hasStringProp = Object.values(props).some((p) => {
           const prop = p as Record<string, unknown>;
           return prop.type === 'string';
@@ -51,11 +48,11 @@ export class PayloadLimitsCheck {
         };
       }
 
-      let maxAccepted = MIN_PAYLOAD_SIZE;
-      let minRejected = MAX_PAYLOAD_SIZE;
+      let maxAccepted = MIN_PAYLOAD_BYTES;
+      let minRejected = MAX_PAYLOAD_BYTES;
 
-      let low = MIN_PAYLOAD_SIZE;
-      let high = MAX_PAYLOAD_SIZE;
+      let low = MIN_PAYLOAD_BYTES;
+      let high = MAX_PAYLOAD_BYTES;
 
       while (low <= high) {
         const mid = Math.floor((low + high) / 2);

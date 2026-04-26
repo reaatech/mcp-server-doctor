@@ -1,4 +1,5 @@
 import { TransportError } from './errors.js';
+import { DISCONNECT_TIMEOUT_MS } from '../../constants.js';
 
 export interface StreamableHTTPTransportOptions {
   url: string;
@@ -69,7 +70,7 @@ export class StreamableHTTPTransport {
         await fetch(this.options.url, {
           method: 'DELETE',
           headers: { 'mcp-session-id': this.sessionId, ...this.options.headers },
-          signal: AbortSignal.timeout(5000),
+          signal: AbortSignal.timeout(DISCONNECT_TIMEOUT_MS),
         });
       } catch {
         // Ignore disconnect errors
