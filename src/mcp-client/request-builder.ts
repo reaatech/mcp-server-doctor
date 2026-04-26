@@ -1,4 +1,5 @@
 import { getProgramVersion } from '../version.js';
+import { MCP_PROTOCOL_VERSION } from '../constants.js';
 
 // Request builder utilities for MCP JSON-RPC messages.
 // These helpers centralize request construction for consistency.
@@ -9,7 +10,7 @@ export function buildInitializeRequest(id?: number): Record<string, unknown> {
     id: id ?? 1,
     method: 'initialize',
     params: {
-      protocolVersion: '2024-11-05',
+      protocolVersion: MCP_PROTOCOL_VERSION,
       capabilities: {},
       clientInfo: {
         name: 'mcp-server-doctor',

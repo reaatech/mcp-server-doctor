@@ -4,6 +4,7 @@ import { DiagnosticContext } from '../../types/domain.js';
 import { now } from '../../utils/index.js';
 import { gradeCompliance } from '../../grading/index.js';
 import { recordCheck } from '../../observability/metrics.js';
+import { logger } from '../../observability/logger.js';
 
 export class AuthVerificationCheck {
   name = 'auth-verification';
@@ -19,7 +20,6 @@ export class AuthVerificationCheck {
     const requestedAuth = context.options.auth;
 
     try {
-      // Test the configured auth mode
       try {
         await client.sendRequest('ping', {});
         authResults.push({ mode: requestedAuth, success: true });
@@ -32,16 +32,12 @@ export class AuthVerificationCheck {
         warnings++;
       }
 
-      // If auth is configured, verify that unauthenticated requests are rejected
       if (requestedAuth !== 'none') {
         try {
-          // Attempt a request that should fail without auth by stripping credentials.
-          // We can only do this for transports that expose headers (HTTP/SSE).
           const strippedClient = await this.tryNoAuthRequest(context);
           if (strippedClient) {
             try {
               await strippedClient.sendRequest('ping', {});
-              // Server incorrectly accepted an unauthenticated request — this is a failure
               authResults.push({
                 mode: 'none',
                 success: false,
@@ -50,7 +46,6 @@ export class AuthVerificationCheck {
               warnings++;
               details.unauthenticatedAccepted = true;
             } catch (error) {
-              // Server correctly rejected the unauthenticated request — this is expected
               authResults.push({
                 mode: 'none',
                 success: true,
@@ -58,14 +53,19 @@ export class AuthVerificationCheck {
               });
               details.unauthenticatedRejected = true;
             } finally {
-              await strippedClient.disconnect().catch(() => {});
+              await strippedClient.disconnect().catch((err) => {
+                logger.debug({ err }, 'Non-critical disconnect error in auth check');
+              });
             }
           } else {
             details.note =
               'Auth rejection test not supported for stdio transport; manual verification recommended';
           }
-        } catch {
-          // Ignore
+        } catch (err) {
+          logger.warn(
+            { err: err instanceof Error ? err.message : String(err) },
+            'Auth rejection test setup failed',
+          );
         }
       }
 
@@ -115,7 +115,6 @@ export class AuthVerificationCheck {
   }
 
   private async tryNoAuthRequest(context: DiagnosticContext): Promise<MCPClient | null> {
-    // Only HTTP and SSE transports support header-based auth stripping
     if (context.options.transport === 'stdio') {
       return null;
     }

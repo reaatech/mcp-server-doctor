@@ -5,6 +5,7 @@ import { now, measureTimeAsync } from '../../utils/index.js';
 import { gradeCompliance } from '../../grading/index.js';
 import { logger } from '../../observability/logger.js';
 import { recordCheck } from '../../observability/metrics.js';
+import { PING_TIMEOUT_THRESHOLD_MS } from '../../constants.js';
 
 export class TransportNegotiationCheck {
   name = 'transport-negotiation';
@@ -18,16 +19,11 @@ export class TransportNegotiationCheck {
     const details: Record<string, unknown> = {};
 
     try {
-      const sessionInfo = {
-        sessionId: client.getSessionId(),
-        transportType: context.options.transport,
-        endpoint: context.endpoint,
-      };
-
+      const sessionId = client.getSessionId();
       const isStdio =
         context.options.transport === 'stdio' ||
         (context.options.transport === 'auto' && !context.endpoint.startsWith('http'));
-      if (!sessionInfo.sessionId && !isStdio) {
+      if (!sessionId && !isStdio) {
         warnings++;
         details.sessionIdWarning = 'No session ID established';
       }
@@ -35,9 +31,9 @@ export class TransportNegotiationCheck {
       const pingResult = await measureTimeAsync(() => client.sendRequest('ping', {}));
       details.pingLatencyMs = pingResult.durationMs;
 
-      if (pingResult.durationMs > 5000) {
+      if (pingResult.durationMs > PING_TIMEOUT_THRESHOLD_MS) {
         warnings++;
-        details.pingWarning = 'Ping took > 5s';
+        details.pingWarning = `Ping took > ${PING_TIMEOUT_THRESHOLD_MS / 1000}s`;
       }
 
       const serverInfo = client.getServerInfo?.() || {};

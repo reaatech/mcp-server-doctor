@@ -1,5 +1,6 @@
-import { isValidURL, isPrivateURL } from '../utils/index.js';
+import { isValidURL, isPrivateURL, sanitizeUrl } from '../utils/index.js';
 import { getProgramVersion } from '../version.js';
+import { MCP_PROTOCOL_VERSION } from '../constants.js';
 import { StdioTransport, SSETransport, StreamableHTTPTransport } from './transports/index.js';
 import { ToolDefinition, DiagnosticOptions } from '../types/domain.js';
 import { logger } from '../observability/logger.js';
@@ -30,7 +31,10 @@ class DoctorMCPClient implements MCPClient {
 
   async connect(): Promise<void> {
     if (isPrivateURL(this.endpoint)) {
-      logger.warn({ endpoint: this.endpoint }, 'Connecting to a private/internal endpoint');
+      logger.warn(
+        { endpoint: sanitizeUrl(this.endpoint) },
+        'Connecting to a private/internal endpoint',
+      );
     }
 
     let transport = await this.negotiateTransport();
@@ -41,8 +45,14 @@ class DoctorMCPClient implements MCPClient {
       // Auto-negotiation fallback: HTTP → SSE
       if (this.options.transport === 'auto' && transport instanceof StreamableHTTPTransport) {
         logger.warn(
-          { error: connectError instanceof Error ? connectError.message : String(connectError) },
+          {
+            error: connectError instanceof Error ? connectError.message : String(connectError),
+            endpoint: sanitizeUrl(this.endpoint),
+          },
           'HTTP transport failed, falling back to SSE',
+        );
+        process.stderr.write(
+          `Warning: HTTP transport failed for ${sanitizeUrl(this.endpoint)}, falling back to SSE\n`,
         );
         transport = new SSETransport({
           url: this.endpoint,
@@ -58,12 +68,12 @@ class DoctorMCPClient implements MCPClient {
     this.transport = transport;
 
     logger.info(
-      { transport: this.options.transport, endpoint: this.endpoint },
+      { transport: this.options.transport, endpoint: sanitizeUrl(this.endpoint) },
       'Connected via transport',
     );
 
     const initResult = await transport.sendRequest('initialize', {
-      protocolVersion: '2024-11-05',
+      protocolVersion: MCP_PROTOCOL_VERSION,
       capabilities: {},
       clientInfo: { name: 'mcp-server-doctor', version: getProgramVersion() },
     });
@@ -78,13 +88,13 @@ class DoctorMCPClient implements MCPClient {
       inputSchema: (t.inputSchema as Record<string, unknown>) || {},
     }));
 
-    // The 'initialized' notification is sent to inform the server that the client is ready.
-    // Not all transports implement sendNotification; we fire-and-forget where supported.
-    const notifyTransport = transport as unknown as {
-      sendNotification?: (method: string, params?: unknown) => Promise<void>;
-    };
-    if (typeof notifyTransport.sendNotification === 'function') {
-      await notifyTransport.sendNotification('initialized', {});
+    if (
+      'sendNotification' in transport &&
+      typeof (transport as Record<string, unknown>).sendNotification === 'function'
+    ) {
+      await (
+        transport as { sendNotification: (method: string, params?: unknown) => Promise<void> }
+      ).sendNotification('initialized', {});
     }
   }
 

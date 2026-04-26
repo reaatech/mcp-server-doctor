@@ -101,7 +101,9 @@ describe('All Diagnostic Checks', () => {
     it('does not warn about session ID for stdio transport', async () => {
       const check = new TransportNegotiationCheck();
       const client = createMockClient();
-      const context = createContext({ options: { ...createContext().options, transport: 'stdio' } });
+      const context = createContext({
+        options: { ...createContext().options, transport: 'stdio' },
+      });
       const result = await check.validate(client, context);
       expect(result.details.sessionIdWarning).toBeUndefined();
     });
@@ -109,7 +111,10 @@ describe('All Diagnostic Checks', () => {
     it('does not warn about session ID for auto transport with non-URL endpoint', async () => {
       const check = new TransportNegotiationCheck();
       const client = createMockClient();
-      const context = createContext({ endpoint: '/usr/bin/node', options: { ...createContext().options, transport: 'auto' } });
+      const context = createContext({
+        endpoint: '/usr/bin/node',
+        options: { ...createContext().options, transport: 'auto' },
+      });
       const result = await check.validate(client, context);
       expect(result.details.sessionIdWarning).toBeUndefined();
     });
@@ -214,7 +219,9 @@ describe('All Diagnostic Checks', () => {
     it('returns note for stdio transport when auth is configured', async () => {
       const check = new AuthVerificationCheck();
       const client = createMockClient();
-      const context = createContext({ options: { ...createContext().options, transport: 'stdio', auth: 'bearer' as const } });
+      const context = createContext({
+        options: { ...createContext().options, transport: 'stdio', auth: 'bearer' as const },
+      });
       const result = await check.validate(client, context);
       expect(result.passed).toBe(true);
       expect(result.details.note).toContain('manual verification recommended');
@@ -240,7 +247,9 @@ describe('All Diagnostic Checks', () => {
 
       const check = new AuthVerificationCheck();
       const client = createMockClient();
-      const context = createContext({ options: { ...createContext().options, auth: 'bearer' as const } });
+      const context = createContext({
+        options: { ...createContext().options, auth: 'bearer' as const },
+      });
       const result = await check.validate(client, context);
       expect(result.details.unauthenticatedAccepted).toBe(true);
       expect(result.passed).toBe(false);
@@ -256,7 +265,9 @@ describe('All Diagnostic Checks', () => {
 
       const check = new AuthVerificationCheck();
       const client = createMockClient();
-      const context = createContext({ options: { ...createContext().options, auth: 'bearer' as const } });
+      const context = createContext({
+        options: { ...createContext().options, auth: 'bearer' as const },
+      });
       const result = await check.validate(client, context);
       expect(result.details.unauthenticatedRejected).toBe(true);
       expect(result.passed).toBe(true);
@@ -413,7 +424,9 @@ describe('All Diagnostic Checks', () => {
         }),
         callTool: vi.fn().mockImplementation((name: string) => {
           if (name === 'nonexistent_tool_xyz') {
-            return Promise.reject(new Error(JSON.stringify({ code: -32602, message: 'Invalid params' })));
+            return Promise.reject(
+              new Error(JSON.stringify({ code: -32602, message: 'Invalid params' })),
+            );
           }
           return Promise.resolve({});
         }),
@@ -426,7 +439,11 @@ describe('All Diagnostic Checks', () => {
     it('fails when unknown tool returns success', async () => {
       const check = new ErrorFormatCheck();
       const client = createMockClient({
-        sendRequest: vi.fn().mockRejectedValue(new Error(JSON.stringify({ code: -32601, message: 'Method not found' }))),
+        sendRequest: vi
+          .fn()
+          .mockRejectedValue(
+            new Error(JSON.stringify({ code: -32601, message: 'Method not found' })),
+          ),
         callTool: vi.fn().mockResolvedValue({ unexpected: 'success' }),
       });
       const result = await check.validate(client, createContext());
@@ -437,8 +454,12 @@ describe('All Diagnostic Checks', () => {
     it('handles malformed JSON-RPC errors', async () => {
       const check = new ErrorFormatCheck();
       const client = createMockClient({
-        sendRequest: vi.fn().mockRejectedValue(new Error(JSON.stringify({ message: 'Missing code' }))),
-        callTool: vi.fn().mockRejectedValue(new Error(JSON.stringify({ code: 400, message: 'Positive code' }))),
+        sendRequest: vi
+          .fn()
+          .mockRejectedValue(new Error(JSON.stringify({ message: 'Missing code' }))),
+        callTool: vi
+          .fn()
+          .mockRejectedValue(new Error(JSON.stringify({ code: 400, message: 'Positive code' }))),
       });
       const result = await check.validate(client, createContext());
       expect(result.passed).toBe(false);

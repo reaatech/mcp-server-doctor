@@ -28,6 +28,8 @@ export const PAYLOAD_BENCHMARKS = {
 
 export const GRADE_ORDER: Array<'A' | 'B' | 'C' | 'D' | 'F'> = ['A', 'B', 'C', 'D', 'F'];
 
+const GRADE_INDEX = new Map<string, number>(GRADE_ORDER.map((g, i) => [g, i]));
+
 export function gradeLatency(p99Ms: number): 'A' | 'B' | 'C' | 'D' | 'F' {
   if (p99Ms <= LATENCY_BENCHMARKS.A.p99) return 'A';
   if (p99Ms <= LATENCY_BENCHMARKS.B.p99) return 'B';
@@ -77,7 +79,7 @@ export function worstGrade(
 ): 'A' | 'B' | 'C' | 'D' | 'F' {
   let worst: 'A' | 'B' | 'C' | 'D' | 'F' = 'A';
   for (const g of grades) {
-    if (GRADE_ORDER.indexOf(g) > GRADE_ORDER.indexOf(worst)) {
+    if ((GRADE_INDEX.get(g) ?? 0) > (GRADE_INDEX.get(worst) ?? 0)) {
       worst = g;
     }
   }

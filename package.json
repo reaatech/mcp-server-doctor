@@ -80,9 +80,6 @@
     "dist/src",
     "LICENSE",
     "README.md",
-    "AGENTS.md",
-    "ARCHITECTURE.md",
-    "CONTRIBUTING.md",
-    "skills"
+    "CHANGELOG.md"
   ]
 }
