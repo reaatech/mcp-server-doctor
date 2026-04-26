@@ -17,6 +17,8 @@ const GRADE_ICONS: Record<Grade, string> = {
   F: '❌',
 };
 
+const WARNING_KEYS = ['warning', 'sessionIdWarning', 'pingWarning', 'serverInfoWarning'];
+
 export function formatConsoleReport(report: DiagnosticReport): string {
   const lines: string[] = [];
 
@@ -43,8 +45,13 @@ export function formatConsoleReport(report: DiagnosticReport): string {
     const name = chalk.bold(check.name);
     const message = chalk.dim(check.message);
     lines.push(`  ${icon} ${grade} ${name} — ${message}`);
-    if (Object.keys(check.details).length > 0 && check.details.warning) {
-      lines.push(chalk.yellow(`     ⚠️  ${String(check.details.warning)}`));
+
+    if (!check.passed || Object.keys(check.details).length > 0) {
+      for (const key of WARNING_KEYS) {
+        if (check.details[key]) {
+          lines.push(chalk.yellow(`     ⚠️  ${String(check.details[key])}`));
+        }
+      }
     }
   }
   lines.push('');

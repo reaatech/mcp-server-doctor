@@ -8,6 +8,8 @@ const GRADE_EMOJI: Record<Grade, string> = {
   F: '❌',
 };
 
+const MAX_TOOLS_DISPLAY = 10;
+
 export function escapeMd(text: string): string {
   return text
     .replace(/\\/g, '\\\\')
@@ -63,10 +65,14 @@ export function formatMarkdownReport(report: DiagnosticReport): string {
     lines.push('');
     lines.push('| Name | Description |');
     lines.push('|------|-------------|');
-    for (const tool of report.tools) {
+    const displayTools = report.tools.slice(0, MAX_TOOLS_DISPLAY);
+    for (const tool of displayTools) {
       lines.push(
         `| ${escapeMd(tool.name)} | ${escapeMd(tool.description || '(no description)')} |`,
       );
+    }
+    if (report.tools.length > MAX_TOOLS_DISPLAY) {
+      lines.push(`| *... and ${report.tools.length - MAX_TOOLS_DISPLAY} more* | |`);
     }
     lines.push('');
   }
@@ -89,7 +95,7 @@ export function formatMarkdownReport(report: DiagnosticReport): string {
   if (report.error) {
     lines.push('## Error');
     lines.push('');
-    lines.push(`\`\`\``);
+    lines.push('```');
     lines.push(report.error);
     lines.push('```');
     lines.push('');

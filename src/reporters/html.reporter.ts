@@ -8,6 +8,8 @@ const GRADE_COLORS: Record<Grade, string> = {
   F: '#ef4444',
 };
 
+const MAX_TOOLS_DISPLAY = 10;
+
 export function formatHtmlReport(report: DiagnosticReport): string {
   const checksHtml = report.checks
     .map(
@@ -39,6 +41,8 @@ export function formatHtmlReport(report: DiagnosticReport): string {
       </div>`
       : '';
 
+  const displayTools = report.tools.slice(0, MAX_TOOLS_DISPLAY);
+  const remainingTools = report.tools.length - MAX_TOOLS_DISPLAY;
   const toolsHtml =
     report.tools.length > 0
       ? `
@@ -46,12 +50,13 @@ export function formatHtmlReport(report: DiagnosticReport): string {
         <h3>Tools (${report.tools.length})</h3>
         <table>
           <tr><th>Name</th><th>Description</th></tr>
-          ${report.tools
+          ${displayTools
             .map(
               (t) =>
                 `<tr><td>${escapeHtml(t.name)}</td><td>${escapeHtml(t.description || '')}</td></tr>`,
             )
             .join('\n')}
+          ${remainingTools > 0 ? `<tr><td colspan="2"><em>... and ${remainingTools} more</em></td></tr>` : ''}
         </table>
       </div>`
       : '';
