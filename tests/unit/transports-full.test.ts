@@ -270,8 +270,11 @@ describe('Transport Implementations', () => {
       const requestPromise = transport.sendRequest('ping', {});
       stdoutCb!(
         Buffer.from(
-          JSON.stringify({ jsonrpc: '2.0', id: 1, error: { code: -32600, message: 'Bad Request' } }) +
-            '\n',
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            error: { code: -32600, message: 'Bad Request' },
+          }) + '\n',
         ),
       );
       await expect(requestPromise).rejects.toThrow('Bad Request');
@@ -392,7 +395,6 @@ describe('Transport Implementations', () => {
     });
 
     it('times out pending requests', async () => {
-      let stdoutCb: ((data: Buffer) => void) | undefined;
       spawn.mockImplementationOnce(() => {
         const on = vi.fn((event: string, cb: (...args: unknown[]) => void) => {
           if (event === 'spawn') {
@@ -400,9 +402,7 @@ describe('Transport Implementations', () => {
           }
           return { on, once: vi.fn() };
         });
-        const stdoutOn = vi.fn((event: string, cb: (data: Buffer) => void) => {
-          if (event === 'data') stdoutCb = cb;
-        });
+        const stdoutOn = vi.fn();
         return {
           stdout: { on: stdoutOn },
           stderr: { on: vi.fn() },
