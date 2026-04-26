@@ -3,6 +3,8 @@ import { formatReport } from '../../reporters/index.js';
 import { createDoctorClient } from '../../mcp-client/client.js';
 import { logger } from '../../observability/logger.js';
 import { DiagnosticOptions, DiagnosticReport } from '../../types/domain.js';
+import { resolveCredentials } from '../resolve-credentials.js';
+import { DEFAULT_TIMEOUT_MS, DEFAULT_CONCURRENCY } from '../../constants.js';
 
 export interface DiagnoseCommandOptions {
   transport: string;
@@ -41,18 +43,19 @@ export async function runDiagnoseCommand(
   const startTime = Date.now();
   logger.info({ endpoint, transport: cmdOpts.transport, auth: cmdOpts.auth }, 'Starting diagnosis');
 
+  const creds = resolveCredentials(cmdOpts);
   const timeout = parseInt(cmdOpts.timeout, 10);
   const concurrency = parseInt(cmdOpts.concurrency, 10);
 
   const options: DiagnosticOptions = {
     transport: cmdOpts.transport as 'stdio' | 'sse' | 'http' | 'auto',
     auth: cmdOpts.auth as 'none' | 'api-key' | 'bearer' | 'oauth',
-    apiKey: cmdOpts.apiKey,
-    bearerToken: cmdOpts.bearerToken,
-    oauthClientId: cmdOpts.oauthClientId,
-    oauthClientSecret: cmdOpts.oauthClientSecret,
-    timeout: isNaN(timeout) ? 30000 : timeout,
-    concurrency: isNaN(concurrency) ? 10 : concurrency,
+    apiKey: creds.apiKey,
+    bearerToken: creds.bearerToken,
+    oauthClientId: creds.oauthClientId,
+    oauthClientSecret: creds.oauthClientSecret,
+    timeout: isNaN(timeout) ? DEFAULT_TIMEOUT_MS : timeout,
+    concurrency: isNaN(concurrency) ? DEFAULT_CONCURRENCY : concurrency,
     verbose: cmdOpts.verbose,
   };
 

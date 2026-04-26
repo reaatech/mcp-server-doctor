@@ -5,6 +5,8 @@ import { logger } from '../../observability/logger.js';
 import { DiagnosticOptions, Grade } from '../../types/domain.js';
 import { sleep } from '../../utils/index.js';
 import { gradeToNumber } from '../../grading/index.js';
+import { resolveCredentials } from '../resolve-credentials.js';
+import { DEFAULT_TIMEOUT_MS, DEFAULT_CONCURRENCY, WATCH_MIN_INTERVAL_MS } from '../../constants.js';
 import { writeFile } from 'node:fs/promises';
 
 export interface WatchCommandOptions {
@@ -38,13 +40,15 @@ export async function runWatchCommand(
   cmdOpts: WatchCommandOptions,
   signal?: AbortSignal,
 ): Promise<void> {
-  const minIntervalMs = parseInt(process.env.DOCTOR_WATCH_MIN_INTERVAL_MS || '10000', 10);
   const intervalSec = parseFloat(cmdOpts.interval);
   const rawIntervalMs = isNaN(intervalSec) ? 60000 : intervalSec * 1000;
-  const intervalMs = Math.max(rawIntervalMs, minIntervalMs);
-  if (rawIntervalMs < minIntervalMs) {
+  const intervalMs = Math.max(rawIntervalMs, WATCH_MIN_INTERVAL_MS);
+  if (rawIntervalMs < WATCH_MIN_INTERVAL_MS) {
     logger.warn(
-      { requestedIntervalSec: intervalSec, minIntervalMs },
+      {
+        requestedIntervalSec: intervalSec,
+        minIntervalMs: WATCH_MIN_INTERVAL_MS,
+      },
       'Watch interval clamped to minimum',
     );
   }
@@ -57,18 +61,19 @@ export async function runWatchCommand(
     logger.warn({ threshold: cmdOpts.alertThreshold }, 'Invalid alert threshold, defaulting to C');
   }
 
+  const creds = resolveCredentials(cmdOpts);
   const timeout = parseInt(cmdOpts.timeout, 10);
   const concurrency = parseInt(cmdOpts.concurrency, 10);
 
   const options: DiagnosticOptions = {
     transport: cmdOpts.transport as 'stdio' | 'sse' | 'http' | 'auto',
     auth: cmdOpts.auth as 'none' | 'api-key' | 'bearer' | 'oauth',
-    apiKey: cmdOpts.apiKey,
-    bearerToken: cmdOpts.bearerToken,
-    oauthClientId: cmdOpts.oauthClientId,
-    oauthClientSecret: cmdOpts.oauthClientSecret,
-    timeout: isNaN(timeout) ? 30000 : timeout,
-    concurrency: isNaN(concurrency) ? 10 : concurrency,
+    apiKey: creds.apiKey,
+    bearerToken: creds.bearerToken,
+    oauthClientId: creds.oauthClientId,
+    oauthClientSecret: creds.oauthClientSecret,
+    timeout: isNaN(timeout) ? DEFAULT_TIMEOUT_MS : timeout,
+    concurrency: isNaN(concurrency) ? DEFAULT_CONCURRENCY : concurrency,
     verbose: false,
   };
 

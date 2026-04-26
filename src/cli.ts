@@ -18,10 +18,16 @@ program
   .argument('<endpoint>', 'MCP server endpoint (URL or stdio command)')
   .option('--transport <type>', 'Transport type: stdio, sse, http, auto', 'auto')
   .option('--auth <mode>', 'Auth mode: none, api-key, bearer, oauth', 'none')
-  .option('--api-key <key>', 'API key for authentication')
-  .option('--bearer-token <token>', 'Bearer token for authentication')
-  .option('--oauth-client-id <id>', 'OAuth client ID')
-  .option('--oauth-client-secret <secret>', 'OAuth client secret')
+  .option('--api-key <key>', 'API key for authentication (prefer MCP_API_KEY env var)')
+  .option(
+    '--bearer-token <token>',
+    'Bearer token for authentication (prefer MCP_BEARER_TOKEN env var)',
+  )
+  .option('--oauth-client-id <id>', 'OAuth client ID (prefer MCP_OAUTH_CLIENT_ID env var)')
+  .option(
+    '--oauth-client-secret <secret>',
+    'OAuth client secret (prefer MCP_OAUTH_CLIENT_SECRET env var)',
+  )
   .option('--format <format>', 'Output format: console, json, markdown, html', 'console')
   .option('--output <path>', 'Write report to file')
   .option('--verbose', 'Show detailed output', false)
@@ -46,10 +52,16 @@ program
   .option('--alert-threshold <grade>', 'Alert on grade threshold', 'C')
   .option('--transport <type>', 'Transport type: stdio, sse, http, auto', 'auto')
   .option('--auth <mode>', 'Auth mode: none, api-key, bearer, oauth', 'none')
-  .option('--api-key <key>', 'API key for authentication')
-  .option('--bearer-token <token>', 'Bearer token for authentication')
-  .option('--oauth-client-id <id>', 'OAuth client ID')
-  .option('--oauth-client-secret <secret>', 'OAuth client secret')
+  .option('--api-key <key>', 'API key for authentication (prefer MCP_API_KEY env var)')
+  .option(
+    '--bearer-token <token>',
+    'Bearer token for authentication (prefer MCP_BEARER_TOKEN env var)',
+  )
+  .option('--oauth-client-id <id>', 'OAuth client ID (prefer MCP_OAUTH_CLIENT_ID env var)')
+  .option(
+    '--oauth-client-secret <secret>',
+    'OAuth client secret (prefer MCP_OAUTH_CLIENT_SECRET env var)',
+  )
   .option('--format <format>', 'Output format: console, json, markdown, html', 'console')
   .option('--output <path>', 'Write report to file')
   .option('--timeout <ms>', 'Request timeout in milliseconds', '30000')

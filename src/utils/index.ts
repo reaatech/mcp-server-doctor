@@ -100,6 +100,20 @@ export function isValidURL(value: string): boolean {
   }
 }
 
+export function sanitizeUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.username || parsed.password) {
+      parsed.username = '';
+      parsed.password = '';
+      return parsed.toString().replace(/\/\/@/, '//');
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
 export function isPrivateURL(url: string): boolean {
   try {
     const parsed = new URL(url);
