@@ -3,9 +3,7 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { trace, Span, SpanStatusCode } from '@opentelemetry/api';
 
 const sdk = new opentelemetry.NodeSDK({
-  traceExporter: process.env.OTEL_EXPORTER_OTLP_ENDPOINT
-    ? new OTLPTraceExporter()
-    : undefined,
+  traceExporter: process.env.OTEL_EXPORTER_OTLP_ENDPOINT ? new OTLPTraceExporter() : undefined,
   instrumentations: [],
 });
 

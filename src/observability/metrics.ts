@@ -1,4 +1,8 @@
-import { MeterProvider, PeriodicExportingMetricReader, type PushMetricExporter } from '@opentelemetry/sdk-metrics';
+import {
+  MeterProvider,
+  PeriodicExportingMetricReader,
+  type PushMetricExporter,
+} from '@opentelemetry/sdk-metrics';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import type { Meter, MeterProvider as MeterProviderType } from '@opentelemetry/api';
 
