@@ -1,16 +1,15 @@
-import * as opentelemetry from '@opentelemetry/sdk-metrics';
+import { MeterProvider, PeriodicExportingMetricReader, type PushMetricExporter } from '@opentelemetry/sdk-metrics';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
-import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
-import type { Meter, MeterProvider } from '@opentelemetry/api';
+import type { Meter, MeterProvider as MeterProviderType } from '@opentelemetry/api';
 
-let meterProvider: MeterProvider | undefined;
+let meterProvider: MeterProviderType | undefined;
 let meter: Meter | undefined;
 
 if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
-  meterProvider = new opentelemetry.MeterProvider({
+  meterProvider = new MeterProvider({
     readers: [
       new PeriodicExportingMetricReader({
-        exporter: new OTLPMetricExporter(),
+        exporter: new OTLPMetricExporter() as unknown as PushMetricExporter,
         exportIntervalMillis: 60000,
       }),
     ],

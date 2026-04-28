@@ -1,13 +1,11 @@
 import * as opentelemetry from '@opentelemetry/sdk-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-node';
 import { trace, Span, SpanStatusCode } from '@opentelemetry/api';
 
-const traceExporter = process.env.OTEL_EXPORTER_OTLP_ENDPOINT ? new OTLPTraceExporter() : undefined;
-
 const sdk = new opentelemetry.NodeSDK({
-  traceExporter,
-  spanProcessor: traceExporter ? new SimpleSpanProcessor(traceExporter) : undefined,
+  traceExporter: process.env.OTEL_EXPORTER_OTLP_ENDPOINT
+    ? new OTLPTraceExporter()
+    : undefined,
   instrumentations: [],
 });
 
