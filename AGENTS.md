@@ -3,28 +3,41 @@
 ## Architecture Overview
 
 ```
-┌─────────────────┐     ┌─────────────────────┐     ┌──────────────────┐
-│  MCP Client     │────▶│   Diagnostic Engine │────▶│    Reporters     │
-│  (multi-transport)    │   (8 diagnostic     │     │ (console/json/   │
-│                       │    checks)          │     │  markdown/html)  │
-└─────────────────┘     └─────────────────────┘     └──────────────────┘
-                               │
-                               ▼
-                        ┌─────────────────────┐
-                        │     Grading         │
-                        │   (A-F benchmarks)  │
-                        └─────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                     mcp-server-doctor (monorepo)                  │
+├───────────┬──────────┬───────────┬──────────┬──────────┬────────┤
+│   core    │   obs    │  client   │  engine  │reporters │  cli   │
+│ (types,   │(logger,  │(transports│ (checks, │(console, │(cmds,  │
+│  utils,   │ metrics, │  stdio,   │  engine) │  json,   │ entry) │
+│  grading) │ tracing) │  sse,http)│          │  md,html)│        │
+└───────────┴──────────┴───────────┴──────────┴──────────┴────────┘
 ```
 
-`mcp-server-doctor` is a diagnostic CLI that connects to any MCP server endpoint and runs 8 diagnostic checks, producing a graded report card.
+`mcp-server-doctor` is a diagnostic CLI monorepo that connects to any MCP server endpoint and runs 8 diagnostic checks, producing a graded report card. Six packages:
+
+| Package | Name | Description |
+|---------|------|-------------|
+| `packages/core` | `@reaatech/mcp-server-doctor-core` | Types, utils, constants, version, grading |
+| `packages/observability` | `@reaatech/mcp-server-doctor-observability` | Structured logging, OTel metrics and tracing |
+| `packages/client` | `@reaatech/mcp-server-doctor-client` | MCP transport client (stdio, SSE, HTTP) |
+| `packages/engine` | `@reaatech/mcp-server-doctor-engine` | Diagnostic engine with 8 checks |
+| `packages/reporters` | `@reaatech/mcp-server-doctor-reporters` | Report formatters (console, JSON, markdown, HTML) |
+| `packages/cli` | `@reaatech/mcp-server-doctor-cli` | CLI entry point (diagnose, compare, watch) |
 
 ## Quick Start
 
 ```bash
 # Install
-npm install -g mcp-server-doctor
+pnpm install
+
+# Build all packages
+pnpm run build
 
 # Run full diagnosis
+pnpm --filter @reaatech/mcp-server-doctor-cli exec doctor diagnose http://localhost:8080
+
+# Or install globally
+npm install -g @reaatech/mcp-server-doctor-cli
 doctor diagnose http://localhost:8080
 
 # With auth
@@ -39,6 +52,17 @@ doctor compare baseline.json current.json
 # Continuous monitoring
 doctor watch http://localhost:8080 --interval 60 --alert-threshold C
 ```
+
+## Monorepo Tooling
+
+| Tool | Purpose |
+|------|---------|
+| pnpm | Package manager with workspace protocol |
+| turbo | Monorepo task orchestrator |
+| tsup | Dual ESM/CJS build with DTS generation |
+| biome | Linting and formatting |
+| changesets | Versioning and changelog management |
+| vitest | Test runner |
 
 ## Skill System
 
@@ -99,58 +123,25 @@ Set `OTEL_EXPORTER_OTLP_ENDPOINT` to export traces and metrics.
 - [ ] Auth flows work correctly for all configured modes
 - [ ] Transport negotiation succeeds for intended protocols
 
-## CI/CD Integration
-
-```yaml
-# .github/workflows/doctor.yml
-name: MCP Server Health Check
-on: [push, pull_request]
-
-jobs:
-  health:
-    runs-on: ubuntu-latest
-    services:
-      mcp-server:
-        image: my-mcp-server:latest
-        ports: [8080:8080]
-    steps:
-      - uses: actions/checkout@v4
-      - run: npm install -g mcp-server-doctor
-      - run: doctor diagnose http://localhost:8080 --format json --output report.json
-      - name: Upload report
-        uses: actions/upload-artifact@v4
-        with:
-          name: doctor-report
-          path: report.json
-      - name: Fail on critical issues
-        run: |
-          GRADE=$(jq -r .overallGrade report.json)
-          if [ "$GRADE" = "F" ]; then exit 1; fi
-          if [ "$GRADE" = "D" ]; then exit 2; fi
-```
-
 ## Writing Custom Checks
 
 To add a new diagnostic check:
 
-1. Create `src/doctor/checks/my-check.check.ts`:
+1. Create `packages/engine/src/checks/my-check.check.ts`:
 
 ```typescript
-import { CheckResult, CheckCategory, Severity } from '../../types/domain.js';
-import { MCPClient } from '../../mcp-client/client.js';
-import { DiagnosticContext } from '../../types/domain.js';
-import { now } from '../../utils/index.js';
-import { gradeCompliance } from '../../grading/index.js';
-import { recordCheck } from '../../observability/metrics.js';
+import type { CheckResult, DiagnosticContext } from '@reaatech/mcp-server-doctor-core';
+import { CheckCategory, Severity, now, gradeCompliance } from '@reaatech/mcp-server-doctor-core';
+import type { MCPClient } from '@reaatech/mcp-server-doctor-client';
+import { recordCheck } from '@reaatech/mcp-server-doctor-observability';
 
 export class MyCheck {
   name = 'my-check';
-  category = CheckCategory.TRANSPORT; // or other category
+  category = CheckCategory.TRANSPORT;
   severity = Severity.WARNING;
 
   async validate(client: MCPClient, context: DiagnosticContext): Promise<CheckResult> {
     const startTime = performance.now();
-    // ... implement check logic ...
     const grade = gradeCompliance(true, 0);
     const durationMs = Math.round(performance.now() - startTime);
     recordCheck(this.name, grade, durationMs);
@@ -171,7 +162,7 @@ export class MyCheck {
 }
 ```
 
-2. Register in `src/doctor/engine.ts`:
+2. Register in `packages/engine/src/engine.ts`:
 
 ```typescript
 import { MyCheck } from './checks/my-check.check.js';
@@ -182,7 +173,9 @@ private checks = [
 ];
 ```
 
-3. Add tests in `tests/unit/checks.test.ts`
+3. Export from `packages/engine/src/checks/index.ts` and `packages/engine/src/index.ts`.
+
+4. Add tests in `packages/engine/tests/`.
 
 ### Grading Notes
 
@@ -196,20 +189,26 @@ private checks = [
 ## Testing Locally
 
 ```bash
-# Start a test MCP server
-npx mcp-server-starter-ts
+# Install dependencies
+pnpm install
 
-# Run doctor against it
-npm run dev -- diagnose http://localhost:3000 --format console
+# Build all packages
+pnpm run build
 
 # Run all tests
-npm test
+pnpm run test
+
+# Run tests for a specific package
+pnpm --filter @reaatech/mcp-server-doctor-core test
 
 # Check types
-npm run typecheck
+pnpm run typecheck
 
 # Lint
-npm run lint
+pnpm run lint
+
+# Format
+pnpm run format
 ```
 
 ## Common Conformance Issues & Remediation
