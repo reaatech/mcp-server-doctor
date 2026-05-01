@@ -1,0 +1,55 @@
+{
+  "name": "@reaatech/mcp-server-doctor-cli",
+  "version": "1.0.0",
+  "description": "CLI for MCP server diagnostics — diagnose, compare, and watch commands",
+  "license": "MIT",
+  "author": "Rick Somers <rick@reaatech.com> (https://reaatech.com)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/reaatech/mcp-server-doctor.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/reaatech/mcp-server-doctor/tree/main/packages/cli#readme",
+  "bugs": {
+    "url": "https://github.com/reaatech/mcp-server-doctor/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "mcp-server-doctor": "./dist/cli.js",
+    "doctor": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts src/cli.ts --format cjs,esm --dts --clean",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@reaatech/mcp-server-doctor-core": "workspace:*",
+    "@reaatech/mcp-server-doctor-observability": "workspace:*",
+    "@reaatech/mcp-server-doctor-client": "workspace:*",
+    "@reaatech/mcp-server-doctor-engine": "workspace:*",
+    "@reaatech/mcp-server-doctor-reporters": "workspace:*",
+    "commander": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
+  }
+}
