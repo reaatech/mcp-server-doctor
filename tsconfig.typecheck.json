@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@reaatech/mcp-server-doctor-core": ["./packages/core/src/index.ts"],
+      "@reaatech/mcp-server-doctor-observability": ["./packages/observability/src/index.ts"],
+      "@reaatech/mcp-server-doctor-client": ["./packages/client/src/index.ts"],
+      "@reaatech/mcp-server-doctor-engine": ["./packages/engine/src/index.ts"],
+      "@reaatech/mcp-server-doctor-reporters": ["./packages/reporters/src/index.ts"],
+      "@reaatech/mcp-server-doctor-cli": ["./packages/cli/src/index.ts"]
+    }
+  }
+}
