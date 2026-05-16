@@ -5,7 +5,7 @@
   "description": "CLI diagnostic and profiling tool for MCP servers — Lighthouse for MCP. Transport negotiation, latency profiling, auth verification, payload limits, timeout behavior, error compliance, and graded report cards.",
   "type": "module",
   "scripts": {
-    "build": "turbo run build",
+    "build": "pnpm install && turbo run build",
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "lint": "biome check .",
